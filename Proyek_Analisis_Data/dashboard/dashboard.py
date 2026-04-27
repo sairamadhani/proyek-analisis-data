@@ -4,66 +4,56 @@ import seaborn as sns
 import streamlit as st
 import os
 
-# Konfigurasi Halaman
-st.set_page_config(page_title="E-Commerce Analysis Dashboard", layout="wide")
+st.set_page_config(page_title="E-Commerce Dashboard", layout="wide")
 
-# Fungsi Load Data
 @st.cache_data
 def load_data():
-    base_path = os.path.dirname(__file__)
-    file_path = os.path.join(base_path, "main_data.csv")
-    
-    df = pd.read_csv(file_path)
-    
-    if 'order_purchase_timestamp' in df.columns:
-        df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
-    
-    if 'product_category_name_english' not in df.columns:
-        if 'product_category_name' in df.columns:
-            df.rename(columns={'product_category_name': 'product_category_name_english'}, inplace=True)
-            
+    path = os.path.join(os.path.dirname(__file__), "main_data.csv")
+    df = pd.read_csv(path)
+    df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
     return df
 
 main_df = load_data()
 
-# SIDEBAR (Filter Waktu)
+# SIDEBAR
 with st.sidebar:
-    st.title("Filter Rentang Waktu")
-    min_date = main_df["order_purchase_timestamp"].min()
-    max_date = main_df["order_purchase_timestamp"].max()
-    
-    try:
-        start_date, end_date = st.date_input(
-            label='Pilih Rentang Waktu',
-            min_value=min_date,
-            max_value=max_date,
-            value=[min_date, max_date]
-        )
-    except ValueError:
-        st.error("Pilih rentang tanggal yang valid (Awal dan Akhir).")
-        st.stop()
+    st.title("Filter Data")
+    start_date, end_date = st.date_input("Rentang Waktu", [main_df["order_purchase_timestamp"].min(), main_df["order_purchase_timestamp"].max()])
 
-# Filter data berdasarkan input sidebar
 filtered_df = main_df[(main_df["order_purchase_timestamp"] >= pd.to_datetime(start_date)) & 
                        (main_df["order_purchase_timestamp"] <= pd.to_datetime(end_date))]
 
-# DASHBOARD UTAMA
-st.title("E-Commerce Performance Dashboard")
+st.title("E-Commerce Analysis Dashboard")
 
-# Visualisasi 1: Kategori Produk
-st.subheader("Top 10 Kategori Produk Berdasarkan Revenue")
-category_revenue = filtered_df.groupby("product_category_name_english")["price"].sum().sort_values(ascending=False).reset_index().head(10)
+# VISUALISASI PERTANYAAN 1
+st.subheader("1. 5 Kategori Produk dengan Penjualan Tertinggi")
+top_5_df = filtered_df.groupby("product_category_name_english").order_id.nunique().sort_values(ascending=False).reset_index().head(5)
 
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(x="price", y="product_category_name_english", data=category_revenue, palette="magma", ax=ax)
-ax.set_xlabel("Total Revenue")
-ax.set_ylabel("Kategori")
-st.pyplot(fig)
+fig1, ax1 = plt.subplots(figsize=(12, 6))
+sns.barplot(x="order_id", y="product_category_name_english", data=top_5_df, palette=["#72BCD4", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3"], ax=ax1)
+ax1.set_title("Top 5 Product Categories", fontsize=15)
+ax1.set_xlabel("Jumlah Order")
+ax1.set_ylabel(None)
+st.pyplot(fig1)
 
-# Visualisasi 2: Analisis RFM
+# VISUALISASI PERTANYAAN 2
+st.subheader("2. Distribusi Skor Ulasan Pelanggan (Review Score)")
+review_score_df = filtered_df['review_score'].value_counts().sort_index().reset_index()
+review_score_df.columns = ['score', 'count']
+
+fig2, ax2 = plt.subplots(figsize=(10, 5))
+sns.barplot(x="score", y="count", data=review_score_df, palette="viridis", ax=ax2)
+ax2.set_title("Rating Distribution", fontsize=15)
+ax2.set_xlabel("Rating (1-5)")
+ax2.set_ylabel("Jumlah Review")
+
+for p in ax2.patches:
+    ax2.annotate(f'{int(p.get_height())}', (p.get_x() + p.get_width() / 2., p.get_height()), ha = 'center', va = 'center', xytext = (0, 9), textcoords = 'offset points')
+st.pyplot(fig2)
+
+# RFM ANALYSIS
 st.divider()
 st.subheader("Customer Segmentation (RFM Analysis)")
-
 now = filtered_df['order_purchase_timestamp'].max()
 rfm_df = filtered_df.groupby(by="customer_id", as_index=False).agg({
     "order_purchase_timestamp": lambda x: (now - x.max()).days,
@@ -73,12 +63,9 @@ rfm_df = filtered_df.groupby(by="customer_id", as_index=False).agg({
 rfm_df.columns = ["customer_id", "recency", "frequency", "monetary"]
 
 col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Avg Recency (Days)", round(rfm_df.recency.mean(), 1))
-with col2:
-    st.metric("Avg Frequency", round(rfm_df.frequency.mean(), 2))
-with col3:
-    st.metric("Avg Monetary (BRL)", f"R$ {round(rfm_df.monetary.mean(), 2)}")
+with col1: st.metric("Avg Recency", round(rfm_df.recency.mean(), 1))
+with col2: st.metric("Avg Frequency", round(rfm_df.frequency.mean(), 2))
+with col3: st.metric("Avg Monetary", f"R$ {round(rfm_df.monetary.mean(), 2)}")
 
-st.write("Top 5 Customers by RFM:")
-st.dataframe(rfm_df.head(5))
+st.write("Top 5 Customers by Monetary:")
+st.dataframe(rfm_df.sort_values(by="monetary", ascending=False).head(5))
