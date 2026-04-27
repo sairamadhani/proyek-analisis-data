@@ -18,7 +18,7 @@ def load_data():
     df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
     return df
 
-main_df = load_data(
+main_df = load_data()
 
 # SIDEBAR
 with st.sidebar:
