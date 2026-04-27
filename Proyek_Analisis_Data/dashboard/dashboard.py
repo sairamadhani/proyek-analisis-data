@@ -69,9 +69,8 @@ with col2:
     st.dataframe(category_revenue_df.head(5))
 
 # 2. Shipping vs Rating 
-st.subheader("2. Pengaruh Biaya Ongkir terhadap Skor Ulasan")
+st.subheader("2. Pengaruh Biaya Pengiriman terhadap Skor Ulasan")
 
-# Binning pake logic lo 
 filtered_df['freight_group'] = pd.cut(filtered_df['freight_value'], 
                                       bins=[0, 20, 50, 100, 500], 
                                       labels=['Murah', 'Sedang', 'Mahal', 'Sangat Mahal'])
@@ -80,7 +79,7 @@ freight_impact_df = filtered_df.groupby('freight_group', observed=True).agg({
     'review_score': 'mean'
 }).reset_index()
 
-fig2, ax2 = plt.subplots(figsize=(8, 6))
+fig2, ax2 = plt.subplots(figsize=(10, 6))
 sns.barplot(
     x="freight_group", 
     y="review_score", 
@@ -90,8 +89,8 @@ sns.barplot(
 )
 ax2.set_ylim(0, 5)
 ax2.set_title("Rata-rata Skor Ulasan Berdasarkan Kelompok Biaya Pengiriman", fontsize=15)
-ax.set_xlabel("Kelompok Biaya Pengiriman")
-ax.set_ylabel("Rata-rata Skor Ulasan")
+ax2.set_xlabel("Kelompok Biaya Pengiriman")
+ax2.set_ylabel("Rata-rata Skor Ulasan")
 
 for p in ax2.patches:
     ax2.annotate(f'{p.get_height():.2f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
