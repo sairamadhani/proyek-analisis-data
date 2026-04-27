@@ -14,15 +14,15 @@ def load_data():
     df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
     return df
 
-all_df = load_data()
+main_df = load_data()
 
-# --- SIDEBAR ---
+# SIDEBAR
 with st.sidebar:
     st.title("Filter Data")
     
     # Filter Rentang Waktu
-    min_date = all_df["order_purchase_timestamp"].min()
-    max_date = all_df["order_purchase_timestamp"].max()
+    min_date = main_df["order_purchase_timestamp"].min()
+    max_date = main_df["order_purchase_timestamp"].max()
     
     start_date, end_date = st.date_input(
         label='Rentang Waktu',
@@ -32,10 +32,10 @@ with st.sidebar:
     )
 
 # Filter dataframe berdasarkan input sidebar
-main_df = all_df[(all_df["order_purchase_timestamp"] >= str(start_date)) & 
-                 (all_df["order_purchase_timestamp"] <= str(end_date))]
+main_df = main_df[(main_df["order_purchase_timestamp"] >= str(start_date)) & 
+                 (main_df["order_purchase_timestamp"] <= str(end_date))]
 
-# --- MAIN PAGE ---
+# MAIN PAGE
 st.title("E-Commerce Public Analysis Dashboard")
 
 # Tab 1: Revenue Performance
@@ -86,3 +86,16 @@ ax.set_title("Rata-rata Skor Ulasan Berdasarkan Kelompok Biaya Pengiriman", font
 ax.set_xlabel("Kelompok Biaya Pengiriman")
 ax.set_ylabel("Rata-rata Skor Ulasan")
 st.pyplot(fig)
+
+# RFM Analysis
+now = main_df['order_purchase_timestamp'].max()
+rfm_df = main_df.groupby(by="customer_id", as_index=False).agg({
+    "order_purchase_timestamp": lambda x: (now - x.max()).days,
+    "order_id": "nunique",
+    "price": "sum"
+})
+rfm_df.columns = ["customer_id", "recency", "frequency", "monetary"]
+
+st.subheader("Pelanggan Terbaik Berdasarkan Parameter RFM")
+st.write("Top 5 Pelanggan Berdasarkan RFM:")
+st.dataframe(rfm_df.head(5))
