@@ -90,6 +90,8 @@ sns.barplot(
 )
 ax2.set_ylim(0, 5)
 ax2.set_title("Rata-rata Skor Ulasan Berdasarkan Kelompok Biaya Pengiriman", fontsize=15)
+ax.set_xlabel("Kelompok Biaya Pengiriman")
+ax.set_ylabel("Rata-rata Skor Ulasan")
 
 for p in ax2.patches:
     ax2.annotate(f'{p.get_height():.2f}', (p.get_x() + p.get_width() / 2., p.get_height()), 
@@ -110,10 +112,10 @@ rfm_df.columns = ["customer_id", "recency", "frequency", "monetary"]
 
 col_r, col_f, col_m = st.columns(3)
 with col_r:
-    st.metric("Avg Recency (days)", round(rfm_df.recency.mean(), 1))
+    st.metric("Rata Recency (days)", round(rfm_df.recency.mean(), 1))
 with col_f:
-    st.metric("Avg Frequency", round(rfm_df.frequency.mean(), 2))
+    st.metric("Rata Frequency", round(rfm_df.frequency.mean(), 2))
 with col_m:
-    st.metric("Avg Monetary (BRL)", f"R$ {round(rfm_df.monetary.mean(), 2)}")
+    st.metric("Rata Monetary (BRL)", f"R$ {round(rfm_df.monetary.mean(), 2)}")
 
 st.dataframe(rfm_df.sort_values(by="monetary", ascending=False).head(5))
